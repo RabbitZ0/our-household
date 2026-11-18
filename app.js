@@ -3,7 +3,8 @@ const state = {
   data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [] },
   config: null,
   currentMonthPlans: new Date(),
-  currentMonthBills: new Date()
+  currentMonthBills: new Date(),
+  showPaidBills: false
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -14,7 +15,9 @@ function todayISO() {
 }
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  if (!d) return '';
+  const date = new Date(d + 'T00:00:00');
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function uid() {
@@ -30,6 +33,46 @@ function displayName(value) {
     both: 'Both'
   };
   return map[value] || value;
+}
+
+function addDays(iso, days) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function addMonths(iso, months) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+function nextDueDate(iso, recur) {
+  if (!recur || recur === 'none') return null;
+  if (recur === 'weekly') return addDays(iso, 7);
+  if (recur === 'biweekly') return addDays(iso, 14);
+  if (recur === 'monthly') return addMonths(iso, 1);
+  if (recur === 'yearly') return addMonths(iso, 12);
+  return null;
+}
+
+function recurLabel(recur) {
+  const map = { monthly: 'Monthly', weekly: 'Weekly', biweekly: 'Every 2 weeks', yearly: 'Yearly' };
+  return map[recur] || '';
+}
+
+function daysUntil(iso) {
+  const today = new Date(todayISO() + 'T00:00:00');
+  const due = new Date(iso + 'T00:00:00');
+  return Math.round((due - today) / 86400000);
+}
+
+function billStatus(bill) {
+  if (bill.paid) return { class: 'paid', label: 'Paid' };
+  const days = daysUntil(bill.dueDate);
+  if (days < 0) return { class: 'overdue', label: 'Overdue' };
+  if (days <= 3) return { class: 'due-soon', label: days === 0 ? 'Due today' : `Due in ${days}d` };
+  return { class: 'upcoming', label: `Due ${formatDate(bill.dueDate)}` };
 }
 
 // Config
@@ -136,8 +179,16 @@ function renderHome() {
   const chores = state.data.chores.filter(c => !c.done).slice(0, 5);
   $('#today-chores ul').innerHTML = chores.length ? chores.map(c => `<li>${c.text} <small>(${displayName(c.assigned)})</small></li>`).join('') : '<li>No pending chores</li>';
 
-  const soonBills = state.data.bills.filter(b => !b.paid && b.dueDate >= today).slice(0, 4);
-  $('#today-bills ul').innerHTML = soonBills.length ? soonBills.map(b => `<li>${b.name} — $${b.amount} <small>${formatDate(b.dueDate)}</small></li>`).join('') : '<li>No upcoming bills</li>';
+  const soonBills = state.data.bills
+    .filter(b => !b.paid)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 5);
+  $('#today-bills ul').innerHTML = soonBills.length
+    ? soonBills.map(b => {
+        const st = billStatus(b);
+        return `<li class="bill-${st.class}">${b.name} — $${Number(b.amount).toFixed(2)} <small>${st.label}</small></li>`;
+      }).join('')
+    : '<li>No upcoming bills</li>';
 
   const todayMeals = state.data.meals.filter(m => m.date === today);
   $('#today-meals ul').innerHTML = todayMeals.length ? todayMeals.map(m => `<li>${m.type}: ${m.description}</li>`).join('') : '<li>No meals planned</li>';
@@ -182,17 +233,42 @@ function renderGrocery() {
 }
 
 function renderBills() {
-  renderList($('#bills-list'), state.data.bills.sort((a,b) => a.dueDate.localeCompare(b.dueDate)), b => `
-    <li class="${b.paid ? 'done' : ''}">
-      <span>${b.name} — $${Number(b.amount).toFixed(2)} <small>due ${formatDate(b.dueDate)}</small></span>
-      <span>
-        <button class="toggle-btn" data-id="${b.id}">${b.paid ? '↺' : '✓'}</button>
-        <button class="delete-btn" data-id="${b.id}">×</button>
-      </span>
-    </li>
-  `, 'No bills');
+  const today = todayISO();
+  const unpaid = state.data.bills.filter(b => !b.paid);
+  const overdue = unpaid.filter(b => b.dueDate < today);
+  const thisMonth = unpaid.filter(b => b.dueDate.startsWith(today.slice(0, 7)));
+  const totalUnpaid = unpaid.reduce((s, b) => s + Number(b.amount || 0), 0);
+  const totalThisMonth = thisMonth.reduce((s, b) => s + Number(b.amount || 0), 0);
+
+  $('#bills-summary').innerHTML = `
+    <div class="summary-card"><strong>Unpaid</strong><span>$${totalUnpaid.toFixed(2)}</span></div>
+    <div class="summary-card"><strong>This month</strong><span>$${totalThisMonth.toFixed(2)}</span></div>
+    <div class="summary-card ${overdue.length ? 'warn' : ''}"><strong>Overdue</strong><span>${overdue.length}</span></div>
+  `;
+
+  let list = [...state.data.bills].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  if (!state.showPaidBills) list = list.filter(b => !b.paid);
+
+  renderList($('#bills-list'), list, b => {
+    const st = billStatus(b);
+    const recur = b.recur && b.recur !== 'none' ? `<span class="badge">${recurLabel(b.recur)}</span>` : '';
+    const cat = b.category ? `<span class="badge muted">${b.category}</span>` : '';
+    return `
+      <li class="${b.paid ? 'done' : ''} bill-${st.class}">
+        <div class="bill-info">
+          <span class="bill-name">${b.name} — $${Number(b.amount).toFixed(2)}</span>
+          <span class="bill-meta">${st.label} ${recur} ${cat}</span>
+        </div>
+        <span class="bill-actions">
+          <button class="toggle-btn" data-id="${b.id}" title="${b.paid ? 'Mark unpaid' : 'Mark paid'}">${b.paid ? '↺' : '✓'}</button>
+          <button class="delete-btn" data-id="${b.id}">×</button>
+        </span>
+      </li>
+    `;
+  }, 'No bills');
+
   bindListActions('#bills-list', 'bills');
-  renderCalendar('bills', state.currentMonthBills, state.data.bills.map(b => b.dueDate));
+  renderCalendar('bills', state.currentMonthBills, state.data.bills.filter(b => !b.paid).map(b => b.dueDate));
 }
 
 function renderPlans() {
@@ -228,12 +304,31 @@ function bindListActions(selector, key) {
   ul.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.onclick = async () => {
       const item = state.data[key].find(i => i.id === btn.dataset.id);
-      if (item) {
-        if (key === 'chores') item.done = !item.done;
-        if (key === 'bills') item.paid = !item.paid;
-        await saveData();
-        renderAll();
+      if (!item) return;
+      if (key === 'chores') {
+        item.done = !item.done;
       }
+      if (key === 'bills') {
+        const wasPaid = item.paid;
+        item.paid = !item.paid;
+        // When marking a recurring bill as paid, create the next occurrence
+        if (!wasPaid && item.paid && item.recur && item.recur !== 'none') {
+          const nextDate = nextDueDate(item.dueDate, item.recur);
+          if (nextDate) {
+            state.data.bills.push({
+              id: uid(),
+              name: item.name,
+              amount: item.amount,
+              dueDate: nextDate,
+              paid: false,
+              recur: item.recur,
+              category: item.category || ''
+            });
+          }
+        }
+      }
+      await saveData();
+      renderAll();
     };
   });
 }
@@ -310,9 +405,22 @@ function setupAdds() {
     const name = $('#bill-name').value.trim();
     const amount = $('#bill-amount').value;
     const dueDate = $('#bill-due').value;
+    const recur = $('#bill-recur').value;
+    const category = $('#bill-category').value.trim();
     if (!name || !dueDate) return;
-    state.data.bills.push({ id: uid(), name, amount: amount || 0, dueDate, paid: false });
-    $('#bill-name').value = ''; $('#bill-amount').value = '';
+    state.data.bills.push({
+      id: uid(),
+      name,
+      amount: amount || 0,
+      dueDate,
+      paid: false,
+      recur: recur === 'none' ? undefined : recur,
+      category: category || undefined
+    });
+    $('#bill-name').value = '';
+    $('#bill-amount').value = '';
+    $('#bill-category').value = '';
+    $('#bill-recur').value = 'none';
     await saveData();
     renderAll();
   };
@@ -335,6 +443,14 @@ function setupAdds() {
     await saveData();
     renderAll();
   };
+
+  const showPaid = $('#show-paid-bills');
+  if (showPaid) {
+    showPaid.onchange = () => {
+      state.showPaidBills = showPaid.checked;
+      renderBills();
+    };
+  }
 }
 
 // Init
