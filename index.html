@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=baby1">
+  <link rel="stylesheet" href="style.css?v=due1">
 </head>
 <body>
   <div id="setup-modal" class="modal">
@@ -150,7 +150,13 @@
 
     <section id="baby" class="tab-content">
       <h2>Emelie</h2>
-      <div class="bills-summary" id="baby-summary"></div>
+      <div id="countdown" class="countdown"></div>
+      <div class="add-form" style="margin-top:0.75rem">
+        <input type="date" id="due-date" placeholder="Due date">
+        <button id="save-due">Set Due Date</button>
+      </div>
+
+      <div class="bills-summary" id="baby-summary" style="margin-top:1.25rem"></div>
 
       <h3>Quick Log</h3>
       <div class="add-form">
@@ -195,7 +201,7 @@
     </section>
   </main>
 
-  <script src="app.js?v=baby1"></script>
+  <script src="app.js?v=due1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js?v=2').catch(() => {});
