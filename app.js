@@ -1,6 +1,6 @@
 // Our Household App
 const state = {
-  data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [] },
+  data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [] },
   config: null,
   currentMonthPlans: new Date(),
   currentMonthBills: new Date(),
@@ -19,6 +19,12 @@ function formatDate(d) {
   const date = new Date(d + 'T00:00:00');
   if (isNaN(date)) return d;
   return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 function uid() {
@@ -60,6 +66,11 @@ function nextDueDate(iso, recur) {
 function recurLabel(recur) {
   const map = { monthly: 'Monthly', weekly: 'Weekly', biweekly: 'Every 2 weeks', yearly: 'Yearly' };
   return map[recur] || '';
+}
+
+function ensureArrays() {
+  const keys = ['chores', 'groceries', 'meals', 'bills', 'plans', 'notes', 'babyLogs', 'milestones', 'appointments', 'babyNotes'];
+  keys.forEach(k => { if (!Array.isArray(state.data[k])) state.data[k] = []; });
 }
 
 // Config
@@ -107,10 +118,11 @@ async function loadData() {
     const content = decodeURIComponent(escape(atob(file.content)));
     state.data = JSON.parse(content);
     state.sha = file.sha;
+    ensureArrays();
     renderAll();
   } catch (e) {
     console.warn('No data yet or error:', e);
-    state.data = { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [] };
+    state.data = { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [] };
     state.sha = null;
     renderAll();
     await saveData();
@@ -158,6 +170,7 @@ function renderAll() {
   renderBills();
   renderChores();
   renderNotes();
+  renderBaby();
   $('#current-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
@@ -268,6 +281,55 @@ function renderNotes() {
     </li>
   `, 'No notes');
   bindListActions('#notes-list', 'notes');
+}
+
+function renderBaby() {
+  const today = todayISO();
+  const logs = state.data.babyLogs || [];
+  const todayLogs = logs.filter(l => (l.time || '').startsWith(today));
+  const feedings = todayLogs.filter(l => l.type === 'feeding').length;
+  const diapers = todayLogs.filter(l => l.type === 'diaper').length;
+
+  const summary = $('#baby-summary');
+  if (summary) {
+    summary.innerHTML = `
+      <div class="summary-card"><strong>Feedings today</strong><span>${feedings}</span></div>
+      <div class="summary-card"><strong>Diapers today</strong><span>${diapers}</span></div>
+      <div class="summary-card"><strong>Logs today</strong><span>${todayLogs.length}</span></div>
+    `;
+  }
+
+  renderList($('#logs-list'), [...logs].reverse().slice(0, 30), l => `
+    <li>
+      <span><span class="badge">${l.type}</span> ${l.note || ''} <small>${formatDate(l.time)} ${formatTime(l.time)}</small></span>
+      <button class="delete-btn" data-id="${l.id}">×</button>
+    </li>
+  `, 'No logs yet');
+  bindListActions('#logs-list', 'babyLogs');
+
+  renderList($('#milestones-list'), [...(state.data.milestones || [])].sort((a,b) => (b.date || '').localeCompare(a.date || '')), m => `
+    <li>
+      <span>${formatDate(m.date)} — ${m.text}</span>
+      <button class="delete-btn" data-id="${m.id}">×</button>
+    </li>
+  `, 'No milestones yet');
+  bindListActions('#milestones-list', 'milestones');
+
+  renderList($('#appts-list'), [...(state.data.appointments || [])].sort((a,b) => (a.date || '').localeCompare(b.date || '')), a => `
+    <li>
+      <span>${formatDate(a.date)} — ${a.title}${a.note ? ': ' + a.note : ''}</span>
+      <button class="delete-btn" data-id="${a.id}">×</button>
+    </li>
+  `, 'No appointments');
+  bindListActions('#appts-list', 'appointments');
+
+  renderList($('#baby-notes-list'), [...(state.data.babyNotes || [])].reverse(), n => `
+    <li>
+      <span>${n.text} <small>— ${displayName(n.author)} · ${formatDate(n.date)}</small></span>
+      <button class="delete-btn" data-id="${n.id}">×</button>
+    </li>
+  `, 'No memories yet');
+  bindListActions('#baby-notes-list', 'babyNotes');
 }
 
 function bindListActions(selector, key) {
@@ -430,6 +492,50 @@ function setupAdds() {
     renderAll();
   };
 
+  const addLog = $('#add-log');
+  if (addLog) addLog.onclick = async () => {
+    const type = $('#log-type').value;
+    const note = $('#log-note').value.trim();
+    state.data.babyLogs.push({ id: uid(), type, note, time: new Date().toISOString() });
+    $('#log-note').value = '';
+    await saveData();
+    renderAll();
+  };
+
+  const addMilestone = $('#add-milestone');
+  if (addMilestone) addMilestone.onclick = async () => {
+    const text = $('#milestone-text').value.trim();
+    const date = $('#milestone-date').value || todayISO();
+    if (!text) return;
+    state.data.milestones.push({ id: uid(), date, text });
+    $('#milestone-text').value = '';
+    await saveData();
+    renderAll();
+  };
+
+  const addAppt = $('#add-appt');
+  if (addAppt) addAppt.onclick = async () => {
+    const title = $('#appt-title').value.trim();
+    const date = $('#appt-date').value;
+    const note = $('#appt-note').value.trim();
+    if (!title || !date) return;
+    state.data.appointments.push({ id: uid(), date, title, note });
+    $('#appt-title').value = '';
+    $('#appt-note').value = '';
+    await saveData();
+    renderAll();
+  };
+
+  const addBabyNote = $('#add-baby-note');
+  if (addBabyNote) addBabyNote.onclick = async () => {
+    const text = $('#baby-note-text').value.trim();
+    if (!text) return;
+    state.data.babyNotes.push({ id: uid(), text, author: $('#baby-note-author').value, date: todayISO() });
+    $('#baby-note-text').value = '';
+    await saveData();
+    renderAll();
+  };
+
   const showPaid = $('#show-paid-bills');
   if (showPaid) {
     showPaid.onchange = () => {
@@ -448,10 +554,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saveBtn) saveBtn.onclick = saveConfig;
   loadConfig();
   const t = todayISO();
-  const planDate = $('#plan-date');
-  const mealDate = $('#meal-date');
-  const billDue = $('#bill-due');
-  if (planDate) planDate.value = t;
-  if (mealDate) mealDate.value = t;
-  if (billDue) billDue.value = t;
+  ['#plan-date', '#meal-date', '#bill-due', '#milestone-date', '#appt-date'].forEach(id => {
+    const el = $(id);
+    if (el) el.value = t;
+  });
 });
