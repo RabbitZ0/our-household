@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Our Household</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6b8f71">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Our Home">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="setup-modal" class="modal">
+    <div class="modal-content">
+      <h2>Connect to Your Home</h2>
+      <p>Enter your GitHub details to sync data. Stored only in this browser.</p>
+      <input type="text" id="gh-user" placeholder="GitHub username" value="RabbitZ0">
+      <input type="text" id="gh-repo" placeholder="Repository name" value="our-household">
+      <input type="password" id="gh-token" placeholder="Personal Access Token (repo scope)">
+      <button id="save-config">Connect</button>
+      <p class="hint">Create a token at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></p>
+    </div>
+  </div>
+
+  <header>
+    <h1>Our Home</h1>
+    <div class="date" id="current-date"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="home" class="active">Home</button>
+    <button data-tab="plans">Plans</button>
+    <button data-tab="grocery">Grocery</button>
+    <button data-tab="bills">Bills</button>
+    <button data-tab="chores">Chores</button>
+    <button data-tab="notes">Notes</button>
+  </nav>
+
+  <main>
+    <section id="home" class="tab-content active">
+      <h2>Today</h2>
+      <div class="cards">
+        <div class="card" id="today-chores"><h3>Chores</h3><ul></ul></div>
+        <div class="card" id="today-bills"><h3>Bills Due</h3><ul></ul></div>
+        <div class="card" id="today-meals"><h3>Meals</h3><ul></ul></div>
+        <div class="card" id="today-notes"><h3>Notes</h3><ul></ul></div>
+      </div>
+    </section>
+
+    <section id="plans" class="tab-content">
+      <h2>Plans</h2>
+      <div class="calendar-controls">
+        <button id="prev-month-plans">‹</button>
+        <span id="month-year-plans"></span>
+        <button id="next-month-plans">›</button>
+      </div>
+      <div id="calendar-plans" class="calendar"></div>
+      <div class="add-form">
+        <input type="date" id="plan-date">
+        <input type="text" id="plan-title" placeholder="Plan title">
+        <input type="text" id="plan-desc" placeholder="Details">
+        <button id="add-plan">Add Plan</button>
+      </div>
+      <ul id="plans-list"></ul>
+    </section>
+
+    <section id="grocery" class="tab-content">
+      <h2>Grocery</h2>
+      <div class="add-form">
+        <input type="text" id="grocery-item" placeholder="Item to buy">
+        <button id="add-grocery">Add</button>
+      </div>
+      <ul id="grocery-list"></ul>
+      <h3>Meal Plans</h3>
+      <div class="add-form">
+        <input type="date" id="meal-date">
+        <select id="meal-type">
+          <option value="dinner">Dinner</option>
+          <option value="lunch">Lunch</option>
+          <option value="breakfast">Breakfast</option>
+        </select>
+        <input type="text" id="meal-desc" placeholder="What we're having">
+        <button id="add-meal">Add Meal</button>
+      </div>
+      <ul id="meals-list"></ul>
+    </section>
+
+    <section id="bills" class="tab-content">
+      <h2>Bills</h2>
+      <div class="calendar-controls">
+        <button id="prev-month-bills">‹</button>
+        <span id="month-year-bills"></span>
+        <button id="next-month-bills">›</button>
+      </div>
+      <div id="calendar-bills" class="calendar"></div>
+      <div class="add-form">
+        <input type="text" id="bill-name" placeholder="Bill name">
+        <input type="number" id="bill-amount" placeholder="Amount" step="0.01">
+        <input type="date" id="bill-due">
+        <button id="add-bill">Add Bill</button>
+      </div>
+      <ul id="bills-list"></ul>
+    </section>
+
+    <section id="chores" class="tab-content">
+      <h2>Chores</h2>
+      <div class="add-form">
+        <input type="text" id="chore-text" placeholder="Chore">
+        <select id="chore-assign">
+          <option value="both">Both</option>
+          <option value="me">Me</option>
+          <option value="wife">Wife</option>
+        </select>
+        <button id="add-chore">Add</button>
+      </div>
+      <ul id="chores-list"></ul>
+    </section>
+
+    <section id="notes" class="tab-content">
+      <h2>Notes</h2>
+      <div class="add-form">
+        <textarea id="note-text" placeholder="Note for each other..."></textarea>
+        <select id="note-author">
+          <option value="me">Me</option>
+          <option value="wife">Wife</option>
+        </select>
+        <button id="add-note">Add Note</button>
+      </div>
+      <ul id="notes-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
