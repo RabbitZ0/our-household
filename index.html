@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=buttons1">
+  <link rel="stylesheet" href="style.css?v=baby1">
 </head>
 <body>
   <div id="setup-modal" class="modal">
@@ -41,6 +41,7 @@
     <button data-tab="bills">Bills</button>
     <button data-tab="chores">Chores</button>
     <button data-tab="notes">Notes</button>
+    <button data-tab="baby">Emelie</button>
   </nav>
 
   <main>
@@ -146,9 +147,55 @@
       </div>
       <ul id="notes-list"></ul>
     </section>
+
+    <section id="baby" class="tab-content">
+      <h2>Emelie</h2>
+      <div class="bills-summary" id="baby-summary"></div>
+
+      <h3>Quick Log</h3>
+      <div class="add-form">
+        <select id="log-type">
+          <option value="feeding">Feeding</option>
+          <option value="diaper">Diaper</option>
+          <option value="sleep">Sleep</option>
+          <option value="other">Other</option>
+        </select>
+        <input type="text" id="log-note" placeholder="Details (oz, wet/dirty, duration...)">
+        <button id="add-log">Log</button>
+      </div>
+      <ul id="logs-list"></ul>
+
+      <h3>Milestones</h3>
+      <div class="add-form">
+        <input type="date" id="milestone-date">
+        <input type="text" id="milestone-text" placeholder="First smile, rolled over...">
+        <button id="add-milestone">Add</button>
+      </div>
+      <ul id="milestones-list"></ul>
+
+      <h3>Appointments</h3>
+      <div class="add-form">
+        <input type="date" id="appt-date">
+        <input type="text" id="appt-title" placeholder="Pediatrician, ultrasound...">
+        <input type="text" id="appt-note" placeholder="Notes">
+        <button id="add-appt">Add</button>
+      </div>
+      <ul id="appts-list"></ul>
+
+      <h3>Memories & Notes</h3>
+      <div class="add-form">
+        <textarea id="baby-note-text" placeholder="Something we want to remember..."></textarea>
+        <select id="baby-note-author">
+          <option value="michael">Michael</option>
+          <option value="amber">Amber</option>
+        </select>
+        <button id="add-baby-note">Add</button>
+      </div>
+      <ul id="baby-notes-list"></ul>
+    </section>
   </main>
 
-  <script src="app.js?v=bills-safe2"></script>
+  <script src="app.js?v=baby1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js?v=2').catch(() => {});
