@@ -1,6 +1,11 @@
 {
   "chores": [],
-  "groceries": [],
+  "groceries": [
+    {
+      "id": "mwm4uw3dx4ha3",
+      "item": "Milk, Sub Bread and Queso"
+    }
+  ],
   "meals": [],
   "bills": [
     {
