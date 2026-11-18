@@ -3,7 +3,8 @@ const state = {
   data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [] },
   config: null,
   currentMonthPlans: new Date(),
-  currentMonthBills: new Date()
+  currentMonthBills: new Date(),
+  showPaidBills: false
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -14,7 +15,10 @@ function todayISO() {
 }
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  if (!d) return '';
+  const date = new Date(d + 'T00:00:00');
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function uid() {
@@ -30,6 +34,32 @@ function displayName(value) {
     both: 'Both'
   };
   return map[value] || value;
+}
+
+function addDays(iso, days) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function addMonths(iso, months) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+function nextDueDate(iso, recur) {
+  if (!recur || recur === 'none') return null;
+  if (recur === 'weekly') return addDays(iso, 7);
+  if (recur === 'biweekly') return addDays(iso, 14);
+  if (recur === 'monthly') return addMonths(iso, 1);
+  if (recur === 'yearly') return addMonths(iso, 12);
+  return null;
+}
+
+function recurLabel(recur) {
+  const map = { monthly: 'Monthly', weekly: 'Weekly', biweekly: 'Every 2 weeks', yearly: 'Yearly' };
+  return map[recur] || '';
 }
 
 // Config
@@ -133,25 +163,26 @@ function renderAll() {
 
 function renderHome() {
   const today = todayISO();
-  const chores = state.data.chores.filter(c => !c.done).slice(0, 5);
+  const chores = (state.data.chores || []).filter(c => !c.done).slice(0, 5);
   $('#today-chores ul').innerHTML = chores.length ? chores.map(c => `<li>${c.text} <small>(${displayName(c.assigned)})</small></li>`).join('') : '<li>No pending chores</li>';
 
-  const soonBills = state.data.bills.filter(b => !b.paid && b.dueDate >= today).slice(0, 4);
+  const soonBills = (state.data.bills || []).filter(b => !b.paid && b.dueDate >= today).slice(0, 4);
   $('#today-bills ul').innerHTML = soonBills.length ? soonBills.map(b => `<li>${b.name} — $${b.amount} <small>${formatDate(b.dueDate)}</small></li>`).join('') : '<li>No upcoming bills</li>';
 
-  const todayMeals = state.data.meals.filter(m => m.date === today);
+  const todayMeals = (state.data.meals || []).filter(m => m.date === today);
   $('#today-meals ul').innerHTML = todayMeals.length ? todayMeals.map(m => `<li>${m.type}: ${m.description}</li>`).join('') : '<li>No meals planned</li>';
 
-  const recentNotes = state.data.notes.slice(-3).reverse();
+  const recentNotes = (state.data.notes || []).slice(-3).reverse();
   $('#today-notes ul').innerHTML = recentNotes.length ? recentNotes.map(n => `<li>${n.text} <small>— ${displayName(n.author)}</small></li>`).join('') : '<li>No notes</li>';
 }
 
 function renderList(ul, items, renderer, empty = 'Nothing here yet') {
+  if (!ul) return;
   ul.innerHTML = items.length ? items.map(renderer).join('') : `<li class="empty">${empty}</li>`;
 }
 
 function renderChores() {
-  renderList($('#chores-list'), state.data.chores, c => `
+  renderList($('#chores-list'), state.data.chores || [], c => `
     <li class="${c.done ? 'done' : ''}">
       <span>${c.text} <small>(${displayName(c.assigned)})</small></span>
       <span>
@@ -164,7 +195,7 @@ function renderChores() {
 }
 
 function renderGrocery() {
-  renderList($('#grocery-list'), state.data.groceries, g => `
+  renderList($('#grocery-list'), state.data.groceries || [], g => `
     <li>
       <span>${g.item}</span>
       <button class="delete-btn" data-id="${g.id}">×</button>
@@ -172,7 +203,7 @@ function renderGrocery() {
   `, 'Shopping list is empty');
   bindListActions('#grocery-list', 'groceries');
 
-  renderList($('#meals-list'), state.data.meals.sort((a,b) => a.date.localeCompare(b.date)), m => `
+  renderList($('#meals-list'), (state.data.meals || []).sort((a,b) => (a.date || '').localeCompare(b.date || '')), m => `
     <li>
       <span>${formatDate(m.date)} — ${m.type}: ${m.description}</span>
       <button class="delete-btn" data-id="${m.id}">×</button>
@@ -182,32 +213,55 @@ function renderGrocery() {
 }
 
 function renderBills() {
-  renderList($('#bills-list'), state.data.bills.sort((a,b) => a.dueDate.localeCompare(b.dueDate)), b => `
-    <li class="${b.paid ? 'done' : ''}">
-      <span>${b.name} — $${Number(b.amount).toFixed(2)} <small>due ${formatDate(b.dueDate)}</small></span>
-      <span>
-        <button class="toggle-btn" data-id="${b.id}">${b.paid ? '↺' : '✓'}</button>
-        <button class="delete-btn" data-id="${b.id}">×</button>
-      </span>
-    </li>
-  `, 'No bills');
+  const summaryEl = $('#bills-summary');
+  if (summaryEl) {
+    const today = todayISO();
+    const bills = state.data.bills || [];
+    const unpaid = bills.filter(b => !b.paid);
+    const overdue = unpaid.filter(b => b.dueDate < today);
+    const thisMonth = unpaid.filter(b => (b.dueDate || '').startsWith(today.slice(0, 7)));
+    const totalUnpaid = unpaid.reduce((s, b) => s + Number(b.amount || 0), 0);
+    const totalThisMonth = thisMonth.reduce((s, b) => s + Number(b.amount || 0), 0);
+    summaryEl.innerHTML = `
+      <div class="summary-card"><strong>Unpaid</strong><span>$${totalUnpaid.toFixed(2)}</span></div>
+      <div class="summary-card"><strong>This month</strong><span>$${totalThisMonth.toFixed(2)}</span></div>
+      <div class="summary-card ${overdue.length ? 'warn' : ''}"><strong>Overdue</strong><span>${overdue.length}</span></div>
+    `;
+  }
+
+  let list = [...(state.data.bills || [])].sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+  if (!state.showPaidBills) list = list.filter(b => !b.paid);
+
+  renderList($('#bills-list'), list, b => {
+    const recur = b.recur && b.recur !== 'none' ? ` <span class="badge">${recurLabel(b.recur)}</span>` : '';
+    return `
+      <li class="${b.paid ? 'done' : ''}">
+        <span>${b.name} — $${Number(b.amount).toFixed(2)} <small>due ${formatDate(b.dueDate)}${recur}</small></span>
+        <span>
+          <button class="toggle-btn" data-id="${b.id}">${b.paid ? '↺' : '✓'}</button>
+          <button class="delete-btn" data-id="${b.id}">×</button>
+        </span>
+      </li>
+    `;
+  }, 'No bills');
+
   bindListActions('#bills-list', 'bills');
-  renderCalendar('bills', state.currentMonthBills, state.data.bills.map(b => b.dueDate));
+  renderCalendar('bills', state.currentMonthBills, (state.data.bills || []).filter(b => !b.paid).map(b => b.dueDate).filter(Boolean));
 }
 
 function renderPlans() {
-  renderList($('#plans-list'), state.data.plans.sort((a,b) => a.date.localeCompare(b.date)), p => `
+  renderList($('#plans-list'), (state.data.plans || []).sort((a,b) => (a.date || '').localeCompare(b.date || '')), p => `
     <li>
       <span>${formatDate(p.date)} — ${p.title}${p.description ? ': ' + p.description : ''}</span>
       <button class="delete-btn" data-id="${p.id}">×</button>
     </li>
   `, 'No plans');
   bindListActions('#plans-list', 'plans');
-  renderCalendar('plans', state.currentMonthPlans, state.data.plans.map(p => p.date));
+  renderCalendar('plans', state.currentMonthPlans, (state.data.plans || []).map(p => p.date).filter(Boolean));
 }
 
 function renderNotes() {
-  renderList($('#notes-list'), [...state.data.notes].reverse(), n => `
+  renderList($('#notes-list'), [...(state.data.notes || [])].reverse(), n => `
     <li>
       <span>${n.text} <small>— ${displayName(n.author)} · ${formatDate(n.date)}</small></span>
       <button class="delete-btn" data-id="${n.id}">×</button>
@@ -218,22 +272,40 @@ function renderNotes() {
 
 function bindListActions(selector, key) {
   const ul = $(selector);
+  if (!ul) return;
   ul.querySelectorAll('.delete-btn').forEach(btn => {
     btn.onclick = async () => {
-      state.data[key] = state.data[key].filter(i => i.id !== btn.dataset.id);
+      state.data[key] = (state.data[key] || []).filter(i => i.id !== btn.dataset.id);
       await saveData();
       renderAll();
     };
   });
   ul.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.onclick = async () => {
-      const item = state.data[key].find(i => i.id === btn.dataset.id);
-      if (item) {
-        if (key === 'chores') item.done = !item.done;
-        if (key === 'bills') item.paid = !item.paid;
-        await saveData();
-        renderAll();
+      const item = (state.data[key] || []).find(i => i.id === btn.dataset.id);
+      if (!item) return;
+      if (key === 'chores') {
+        item.done = !item.done;
       }
+      if (key === 'bills') {
+        const wasPaid = item.paid;
+        item.paid = !item.paid;
+        if (!wasPaid && item.paid && item.recur && item.recur !== 'none') {
+          const nextDate = nextDueDate(item.dueDate, item.recur);
+          if (nextDate) {
+            state.data.bills.push({
+              id: uid(),
+              name: item.name,
+              amount: item.amount,
+              dueDate: nextDate,
+              paid: false,
+              recur: item.recur
+            });
+          }
+        }
+      }
+      await saveData();
+      renderAll();
     };
   });
 }
@@ -242,6 +314,7 @@ function bindListActions(selector, key) {
 function renderCalendar(type, date, eventDates) {
   const cal = $(`#calendar-${type}`);
   const monthYear = $(`#month-year-${type}`);
+  if (!cal || !monthYear) return;
   const year = date.getFullYear();
   const month = date.getMonth();
   monthYear.textContent = date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
@@ -256,29 +329,34 @@ function renderCalendar(type, date, eventDates) {
   for (let d = 1; d <= daysInMonth; d++) {
     const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = iso === todayISO();
-    const has = eventDates.includes(iso);
+    const has = (eventDates || []).includes(iso);
     html += `<div class="day ${isToday ? 'today' : ''} ${has ? 'has-event' : ''}" data-date="${iso}">${d}</div>`;
   }
   cal.innerHTML = html;
 
   cal.querySelectorAll('.day[data-date]').forEach(day => {
     day.onclick = () => {
-      if (type === 'plans') $('#plan-date').value = day.dataset.date;
-      if (type === 'bills') $('#bill-due').value = day.dataset.date;
+      if (type === 'plans' && $('#plan-date')) $('#plan-date').value = day.dataset.date;
+      if (type === 'bills' && $('#bill-due')) $('#bill-due').value = day.dataset.date;
     };
   });
 }
 
 function setupCalendars() {
-  $('#prev-month-plans').onclick = () => { state.currentMonthPlans.setMonth(state.currentMonthPlans.getMonth() - 1); renderPlans(); };
-  $('#next-month-plans').onclick = () => { state.currentMonthPlans.setMonth(state.currentMonthPlans.getMonth() + 1); renderPlans(); };
-  $('#prev-month-bills').onclick = () => { state.currentMonthBills.setMonth(state.currentMonthBills.getMonth() - 1); renderBills(); };
-  $('#next-month-bills').onclick = () => { state.currentMonthBills.setMonth(state.currentMonthBills.getMonth() + 1); renderBills(); };
+  const pPrev = $('#prev-month-plans');
+  const pNext = $('#next-month-plans');
+  const bPrev = $('#prev-month-bills');
+  const bNext = $('#next-month-bills');
+  if (pPrev) pPrev.onclick = () => { state.currentMonthPlans.setMonth(state.currentMonthPlans.getMonth() - 1); renderPlans(); };
+  if (pNext) pNext.onclick = () => { state.currentMonthPlans.setMonth(state.currentMonthPlans.getMonth() + 1); renderPlans(); };
+  if (bPrev) bPrev.onclick = () => { state.currentMonthBills.setMonth(state.currentMonthBills.getMonth() - 1); renderBills(); };
+  if (bNext) bNext.onclick = () => { state.currentMonthBills.setMonth(state.currentMonthBills.getMonth() + 1); renderBills(); };
 }
 
 // Add actions
 function setupAdds() {
-  $('#add-chore').onclick = async () => {
+  const addChore = $('#add-chore');
+  if (addChore) addChore.onclick = async () => {
     const text = $('#chore-text').value.trim();
     if (!text) return;
     state.data.chores.push({ id: uid(), text, assigned: $('#chore-assign').value, done: false });
@@ -287,7 +365,8 @@ function setupAdds() {
     renderAll();
   };
 
-  $('#add-grocery').onclick = async () => {
+  const addGrocery = $('#add-grocery');
+  if (addGrocery) addGrocery.onclick = async () => {
     const item = $('#grocery-item').value.trim();
     if (!item) return;
     state.data.groceries.push({ id: uid(), item });
@@ -296,7 +375,8 @@ function setupAdds() {
     renderAll();
   };
 
-  $('#add-meal').onclick = async () => {
+  const addMeal = $('#add-meal');
+  if (addMeal) addMeal.onclick = async () => {
     const description = $('#meal-desc').value.trim();
     const date = $('#meal-date').value;
     if (!description || !date) return;
@@ -306,18 +386,31 @@ function setupAdds() {
     renderAll();
   };
 
-  $('#add-bill').onclick = async () => {
+  const addBill = $('#add-bill');
+  if (addBill) addBill.onclick = async () => {
     const name = $('#bill-name').value.trim();
     const amount = $('#bill-amount').value;
     const dueDate = $('#bill-due').value;
+    const recurEl = $('#bill-recur');
+    const recur = recurEl ? recurEl.value : 'none';
     if (!name || !dueDate) return;
-    state.data.bills.push({ id: uid(), name, amount: amount || 0, dueDate, paid: false });
-    $('#bill-name').value = ''; $('#bill-amount').value = '';
+    state.data.bills.push({
+      id: uid(),
+      name,
+      amount: amount || 0,
+      dueDate,
+      paid: false,
+      recur: recur === 'none' ? undefined : recur
+    });
+    $('#bill-name').value = '';
+    $('#bill-amount').value = '';
+    if (recurEl) recurEl.value = 'none';
     await saveData();
     renderAll();
   };
 
-  $('#add-plan').onclick = async () => {
+  const addPlan = $('#add-plan');
+  if (addPlan) addPlan.onclick = async () => {
     const title = $('#plan-title').value.trim();
     const date = $('#plan-date').value;
     if (!title || !date) return;
@@ -327,7 +420,8 @@ function setupAdds() {
     renderAll();
   };
 
-  $('#add-note').onclick = async () => {
+  const addNote = $('#add-note');
+  if (addNote) addNote.onclick = async () => {
     const text = $('#note-text').value.trim();
     if (!text) return;
     state.data.notes.push({ id: uid(), text, author: $('#note-author').value, date: todayISO() });
@@ -335,6 +429,14 @@ function setupAdds() {
     await saveData();
     renderAll();
   };
+
+  const showPaid = $('#show-paid-bills');
+  if (showPaid) {
+    showPaid.onchange = () => {
+      state.showPaidBills = showPaid.checked;
+      renderBills();
+    };
+  }
 }
 
 // Init
@@ -342,10 +444,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupCalendars();
   setupAdds();
-  $('#save-config').onclick = saveConfig;
+  const saveBtn = $('#save-config');
+  if (saveBtn) saveBtn.onclick = saveConfig;
   loadConfig();
   const t = todayISO();
-  $('#plan-date').value = t;
-  $('#meal-date').value = t;
-  $('#bill-due').value = t;
+  const planDate = $('#plan-date');
+  const mealDate = $('#meal-date');
+  const billDue = $('#bill-due');
+  if (planDate) planDate.value = t;
+  if (mealDate) mealDate.value = t;
+  if (billDue) billDue.value = t;
 });
