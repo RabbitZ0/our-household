@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=due1">
+  <link rel="stylesheet" href="style.css?v=impr1">
 </head>
 <body>
   <div id="setup-modal" class="modal">
@@ -32,6 +32,7 @@
   <header>
     <h1>Our Home</h1>
     <div class="date" id="current-date"></div>
+    <div class="synced" id="last-synced"></div>
   </header>
 
   <nav class="tabs">
@@ -48,10 +49,11 @@
     <section id="home" class="tab-content active">
       <h2>Today</h2>
       <div class="cards">
-        <div class="card" id="today-chores"><h3>Chores</h3><ul></ul></div>
-        <div class="card" id="today-bills"><h3>Bills Due</h3><ul></ul></div>
-        <div class="card" id="today-meals"><h3>Meals</h3><ul></ul></div>
-        <div class="card" id="today-notes"><h3>Notes</h3><ul></ul></div>
+        <div class="card clickable" data-goto="chores" id="today-chores"><h3>Chores</h3><ul></ul></div>
+        <div class="card clickable" data-goto="bills" id="today-bills"><h3>Bills Due</h3><ul></ul></div>
+        <div class="card clickable" data-goto="grocery" id="today-meals"><h3>Meals</h3><ul></ul></div>
+        <div class="card clickable" data-goto="notes" id="today-notes"><h3>Notes</h3><ul></ul></div>
+        <div class="card clickable" data-goto="baby" id="today-emelie"><h3>Emelie</h3><ul></ul></div>
       </div>
     </section>
 
@@ -76,6 +78,10 @@
       <h2>Grocery</h2>
       <div class="add-form">
         <input type="text" id="grocery-item" placeholder="Item to buy">
+        <select id="grocery-by">
+          <option value="michael">Michael</option>
+          <option value="amber">Amber</option>
+        </select>
         <button id="add-grocery">Add</button>
       </div>
       <ul id="grocery-list"></ul>
@@ -88,6 +94,10 @@
           <option value="breakfast">Breakfast</option>
         </select>
         <input type="text" id="meal-desc" placeholder="What we're having">
+        <select id="meal-by">
+          <option value="michael">Michael</option>
+          <option value="amber">Amber</option>
+        </select>
         <button id="add-meal">Add Meal</button>
       </div>
       <ul id="meals-list"></ul>
@@ -130,6 +140,12 @@
           <option value="michael">Michael (Me)</option>
           <option value="amber">Amber (Wife)</option>
         </select>
+        <select id="chore-recur">
+          <option value="none">One-time</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
         <button id="add-chore">Add</button>
       </div>
       <ul id="chores-list"></ul>
@@ -146,13 +162,16 @@
         <button id="add-note">Add Note</button>
       </div>
       <ul id="notes-list"></ul>
+      <div style="text-align:center; margin-top:1.5rem">
+        <button id="export-data" class="export-btn">Download Backup</button>
+      </div>
     </section>
 
     <section id="baby" class="tab-content">
       <h2>Emelie</h2>
       <div id="countdown" class="countdown"></div>
       <div class="add-form" style="margin-top:0.75rem">
-        <input type="date" id="due-date" placeholder="Due date">
+        <input type="date" id="due-date">
         <button id="save-due">Set Due Date</button>
       </div>
 
@@ -168,6 +187,12 @@
         </select>
         <input type="text" id="log-note" placeholder="Details (oz, wet/dirty, duration...)">
         <button id="add-log">Log</button>
+      </div>
+      <div class="log-filters">
+        <button data-filter="all" class="active">All</button>
+        <button data-filter="feeding">Feeding</button>
+        <button data-filter="diaper">Diaper</button>
+        <button data-filter="sleep">Sleep</button>
       </div>
       <ul id="logs-list"></ul>
 
@@ -201,7 +226,7 @@
     </section>
   </main>
 
-  <script src="app.js?v=due1"></script>
+  <script src="app.js?v=impr1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js?v=2').catch(() => {});
