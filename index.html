@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=bills2">
+  <link rel="stylesheet" href="style.css?v=revert1">
 </head>
 <body>
   <div id="setup-modal" class="modal">
@@ -94,7 +94,6 @@
 
     <section id="bills" class="tab-content">
       <h2>Bills</h2>
-      <div class="bills-summary" id="bills-summary"></div>
       <div class="calendar-controls">
         <button id="prev-month-bills">‹</button>
         <span id="month-year-bills"></span>
@@ -105,18 +104,7 @@
         <input type="text" id="bill-name" placeholder="Bill name">
         <input type="number" id="bill-amount" placeholder="Amount" step="0.01">
         <input type="date" id="bill-due">
-        <select id="bill-recur">
-          <option value="none">One-time</option>
-          <option value="monthly">Monthly</option>
-          <option value="weekly">Weekly</option>
-          <option value="biweekly">Every 2 weeks</option>
-          <option value="yearly">Yearly</option>
-        </select>
-        <input type="text" id="bill-category" placeholder="Category (optional)">
         <button id="add-bill">Add Bill</button>
-      </div>
-      <div class="bills-filters">
-        <label><input type="checkbox" id="show-paid-bills"> Show paid</label>
       </div>
       <ul id="bills-list"></ul>
     </section>
@@ -149,7 +137,7 @@
     </section>
   </main>
 
-  <script src="app.js?v=bills2"></script>
+  <script src="app.js?v=revert1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
