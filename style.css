@@ -3,8 +3,8 @@
   --bg-gradient: linear-gradient(145deg, #1a1d1c 0%, #222725 100%);
   --card: #252a28;
   --card-hover: #2c322f;
-  --accent: #7a9e7e;
-  --accent-light: #3a4a3d;
+  --accent: #c9a227;
+  --accent-light: #3d3420;
   --text: #e8ebe9;
   --text-light: #a8b0ab;
   --border: #3a403d;
@@ -254,7 +254,7 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
 
 .calendar .day.other { opacity: 0.35; }
 .calendar .day.today { background: var(--accent-light); font-weight: 500; }
-.calendar .day.has-event { background: #2f3d32; }
+.calendar .day.has-event { background: #3d3420; }
 .calendar .day.has-event::after {
   content: '';
   position: absolute;
