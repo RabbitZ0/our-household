@@ -1,6 +1,11 @@
 {
   "chores": [],
-  "groceries": [],
+  "groceries": [
+    {
+      "id": "mwlhfcl67tq49",
+      "item": "Milk"
+    }
+  ],
   "meals": [],
   "bills": [
     {
