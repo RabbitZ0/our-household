@@ -42,6 +42,13 @@ header h1 {
   margin-top: 0.25rem;
 }
 
+.synced {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+  opacity: 0.8;
+}
+
 .tabs {
   display: flex;
   justify-content: center;
@@ -110,6 +117,15 @@ h3 {
   padding: 1.25rem;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+}
+
+.card.clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.card.clickable:hover {
+  border-color: var(--accent);
 }
 
 .card h3 {
@@ -200,7 +216,7 @@ ul li:last-child { border: none; }
 
 ul li .done { text-decoration: line-through; opacity: 0.5; }
 
-.delete-btn, .toggle-btn {
+.delete-btn, .toggle-btn, .add-to-grocery {
   background: #2a2f2d;
   border: 1px solid var(--border);
   color: var(--text-light);
@@ -216,13 +232,13 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
   flex-shrink: 0;
 }
 
-.delete-btn:hover, .toggle-btn:hover {
+.delete-btn:hover, .toggle-btn:hover, .add-to-grocery:hover {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-light);
 }
 
-.toggle-btn:active, .delete-btn:active {
+.toggle-btn:active, .delete-btn:active, .add-to-grocery:active {
   transform: scale(0.95);
 }
 
@@ -374,6 +390,48 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
   margin-top: 0.25rem;
 }
 
+.log-filters {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.log-filters button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.log-filters button.active {
+  background: var(--accent);
+  color: #1a1d1c;
+  border-color: var(--accent);
+}
+
+.export-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -433,7 +491,7 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
   .add-form { flex-direction: column; }
   .add-form input, .add-form select, .add-form button { width: 100%; }
   .bills-summary { grid-template-columns: 1fr; }
-  .delete-btn, .toggle-btn {
+  .delete-btn, .toggle-btn, .add-to-grocery {
     width: 48px;
     height: 48px;
     font-size: 1.25rem;
