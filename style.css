@@ -265,96 +265,6 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
   border-radius: 50%;
 }
 
-/* Bills improvements */
-.bills-summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-.summary-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-  text-align: center;
-}
-
-.summary-card strong {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
-}
-
-.summary-card span {
-  font-size: 1.15rem;
-  font-weight: 500;
-  color: var(--accent);
-}
-
-.summary-card.warn span { color: #e07070; }
-
-.bills-filters {
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--text-light);
-}
-
-.bills-filters label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-}
-
-.bill-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.bill-name {
-  font-weight: 500;
-}
-
-.bill-meta {
-  font-size: 0.8rem;
-  color: var(--text-light);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.badge {
-  background: var(--accent-light);
-  color: var(--accent);
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-
-.badge.muted {
-  background: #2a2e2c;
-  color: var(--text-light);
-}
-
-.bill-actions {
-  display: flex;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-li.bill-overdue .bill-name { color: #e07070; }
-li.bill-due-soon .bill-name { color: var(--accent); }
-
 .modal {
   position: fixed;
   inset: 0;
@@ -410,5 +320,4 @@ li.bill-due-soon .bill-name { color: var(--accent); }
   .tabs button { padding: 0.5rem 0.8rem; font-size: 0.85rem; }
   .add-form { flex-direction: column; }
   .add-form input, .add-form select, .add-form button { width: 100%; }
-  .bills-summary { grid-template-columns: 1fr; }
 }
