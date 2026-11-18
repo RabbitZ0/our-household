@@ -4,7 +4,9 @@ const state = {
   config: null,
   currentMonthPlans: new Date(),
   currentMonthBills: new Date(),
-  showPaidBills: false
+  showPaidBills: false,
+  logFilter: 'all',
+  lastSynced: null
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -56,6 +58,7 @@ function addMonths(iso, months) {
 
 function nextDueDate(iso, recur) {
   if (!recur || recur === 'none') return null;
+  if (recur === 'daily') return addDays(iso, 1);
   if (recur === 'weekly') return addDays(iso, 7);
   if (recur === 'biweekly') return addDays(iso, 14);
   if (recur === 'monthly') return addMonths(iso, 1);
@@ -64,7 +67,7 @@ function nextDueDate(iso, recur) {
 }
 
 function recurLabel(recur) {
-  const map = { monthly: 'Monthly', weekly: 'Weekly', biweekly: 'Every 2 weeks', yearly: 'Yearly' };
+  const map = { daily: 'Daily', monthly: 'Monthly', weekly: 'Weekly', biweekly: 'Every 2 weeks', yearly: 'Yearly' };
   return map[recur] || '';
 }
 
@@ -79,6 +82,15 @@ function ensureArrays() {
   const keys = ['chores', 'groceries', 'meals', 'bills', 'plans', 'notes', 'babyLogs', 'milestones', 'appointments', 'babyNotes'];
   keys.forEach(k => { if (!Array.isArray(state.data[k])) state.data[k] = []; });
   if (state.data.dueDate === undefined) state.data.dueDate = null;
+}
+
+function switchToTab(tab) {
+  $$('.tabs button').forEach(b => b.classList.remove('active'));
+  $$('.tab-content').forEach(c => c.classList.remove('active'));
+  const btn = $(`.tabs button[data-tab="${tab}"]`);
+  const section = $(`#${tab}`);
+  if (btn) btn.classList.add('active');
+  if (section) section.classList.add('active');
 }
 
 // Config
@@ -127,6 +139,7 @@ async function loadData() {
     state.data = JSON.parse(content);
     state.sha = file.sha;
     ensureArrays();
+    state.lastSynced = new Date();
     renderAll();
   } catch (e) {
     console.warn('No data yet or error:', e);
@@ -152,21 +165,27 @@ async function saveData() {
       body: JSON.stringify(body)
     });
     state.sha = res.content.sha;
+    state.lastSynced = new Date();
+    updateSynced();
   } catch (e) {
     console.error(e);
     alert('Failed to save. Check token permissions (needs repo scope).');
   }
 }
 
+function updateSynced() {
+  const el = $('#last-synced');
+  if (!el || !state.lastSynced) return;
+  el.textContent = 'Synced ' + state.lastSynced.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
 // Tabs
 function setupTabs() {
   $$('.tabs button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('.tabs button').forEach(b => b.classList.remove('active'));
-      $$('.tab-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      $(`#${btn.dataset.tab}`).classList.add('active');
-    });
+    btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
+  });
+  $$('.card.clickable').forEach(card => {
+    card.onclick = () => switchToTab(card.dataset.goto);
   });
 }
 
@@ -180,6 +199,7 @@ function renderAll() {
   renderNotes();
   renderBaby();
   $('#current-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  updateSynced();
 }
 
 function renderHome() {
@@ -195,6 +215,19 @@ function renderHome() {
 
   const recentNotes = (state.data.notes || []).slice(-3).reverse();
   $('#today-notes ul').innerHTML = recentNotes.length ? recentNotes.map(n => `<li>${n.text} <small>— ${displayName(n.author)}</small></li>`).join('') : '<li>No notes</li>';
+
+  const emelie = $('#today-emelie ul');
+  if (emelie) {
+    const due = state.data.dueDate;
+    const days = due ? daysUntil(due) : null;
+    const logs = (state.data.babyLogs || []).filter(l => (l.time || '').startsWith(today));
+    const feed = logs.filter(l => l.type === 'feeding').length;
+    const diaper = logs.filter(l => l.type === 'diaper').length;
+    let html = '';
+    if (days !== null) html += `<li>${days > 0 ? days + ' days to go' : days === 0 ? 'Due today' : Math.abs(days) + ' days past'}</li>`;
+    html += `<li>Feedings: ${feed} · Diapers: ${diaper}</li>`;
+    emelie.innerHTML = html || '<li>No baby updates</li>';
+  }
 }
 
 function renderList(ul, items, renderer, empty = 'Nothing here yet') {
@@ -203,34 +236,52 @@ function renderList(ul, items, renderer, empty = 'Nothing here yet') {
 }
 
 function renderChores() {
-  renderList($('#chores-list'), state.data.chores || [], c => `
-    <li class="${c.done ? 'done' : ''}">
-      <span>${c.text} <small>(${displayName(c.assigned)})</small></span>
-      <span>
-        <button class="toggle-btn" data-id="${c.id}">${c.done ? '↺' : '✓'}</button>
-        <button class="delete-btn" data-id="${c.id}">×</button>
-      </span>
-    </li>
-  `, 'No chores');
+  renderList($('#chores-list'), state.data.chores || [], c => {
+    const recur = c.recur && c.recur !== 'none' ? ` <span class="badge">${recurLabel(c.recur)}</span>` : '';
+    return `
+      <li class="${c.done ? 'done' : ''}">
+        <span>${c.text} <small>(${displayName(c.assigned)})${recur}</small></span>
+        <span>
+          <button class="toggle-btn" data-id="${c.id}">${c.done ? '↺' : '✓'}</button>
+          <button class="delete-btn" data-id="${c.id}">×</button>
+        </span>
+      </li>
+    `;
+  }, 'No chores');
   bindListActions('#chores-list', 'chores');
 }
 
 function renderGrocery() {
   renderList($('#grocery-list'), state.data.groceries || [], g => `
-    <li>
-      <span>${g.item}</span>
-      <button class="delete-btn" data-id="${g.id}">×</button>
+    <li class="${g.done ? 'done' : ''}">
+      <span>${g.item} <small>— ${displayName(g.by || '')}</small></span>
+      <span>
+        <button class="toggle-btn" data-id="${g.id}">${g.done ? '↺' : '✓'}</button>
+        <button class="delete-btn" data-id="${g.id}">×</button>
+      </span>
     </li>
   `, 'Shopping list is empty');
   bindListActions('#grocery-list', 'groceries');
 
   renderList($('#meals-list'), (state.data.meals || []).sort((a,b) => (a.date || '').localeCompare(b.date || '')), m => `
     <li>
-      <span>${formatDate(m.date)} — ${m.type}: ${m.description}</span>
-      <button class="delete-btn" data-id="${m.id}">×</button>
+      <span>${formatDate(m.date)} — ${m.type}: ${m.description} <small>— ${displayName(m.by || '')}</small></span>
+      <span>
+        <button class="add-to-grocery" data-id="${m.id}" title="Add to grocery">+</button>
+        <button class="delete-btn" data-id="${m.id}">×</button>
+      </span>
     </li>
   `, 'No meals planned');
   bindListActions('#meals-list', 'meals');
+  $$('#meals-list .add-to-grocery').forEach(btn => {
+    btn.onclick = async () => {
+      const meal = (state.data.meals || []).find(m => m.id === btn.dataset.id);
+      if (!meal) return;
+      state.data.groceries.push({ id: uid(), item: meal.description, by: meal.by || 'michael', done: false });
+      await saveData();
+      renderAll();
+    };
+  });
 }
 
 function renderBills() {
@@ -326,7 +377,11 @@ function renderBaby() {
     `;
   }
 
-  renderList($('#logs-list'), [...logs].reverse().slice(0, 30), l => `
+  let filtered = [...logs].reverse();
+  if (state.logFilter !== 'all') filtered = filtered.filter(l => l.type === state.logFilter);
+  filtered = filtered.slice(0, 40);
+
+  renderList($('#logs-list'), filtered, l => `
     <li>
       <span><span class="badge">${l.type}</span> ${l.note || ''} <small>${formatDate(l.time)} ${formatTime(l.time)}</small></span>
       <button class="delete-btn" data-id="${l.id}">×</button>
@@ -374,6 +429,22 @@ function bindListActions(selector, key) {
       const item = (state.data[key] || []).find(i => i.id === btn.dataset.id);
       if (!item) return;
       if (key === 'chores') {
+        const wasDone = item.done;
+        item.done = !item.done;
+        if (!wasDone && item.done && item.recur && item.recur !== 'none') {
+          const next = nextDueDate(todayISO(), item.recur);
+          if (next) {
+            state.data.chores.push({
+              id: uid(),
+              text: item.text,
+              assigned: item.assigned,
+              done: false,
+              recur: item.recur
+            });
+          }
+        }
+      }
+      if (key === 'groceries') {
         item.done = !item.done;
       }
       if (key === 'bills') {
@@ -448,8 +519,17 @@ function setupAdds() {
   if (addChore) addChore.onclick = async () => {
     const text = $('#chore-text').value.trim();
     if (!text) return;
-    state.data.chores.push({ id: uid(), text, assigned: $('#chore-assign').value, done: false });
+    const recurEl = $('#chore-recur');
+    const recur = recurEl ? recurEl.value : 'none';
+    state.data.chores.push({
+      id: uid(),
+      text,
+      assigned: $('#chore-assign').value,
+      done: false,
+      recur: recur === 'none' ? undefined : recur
+    });
     $('#chore-text').value = '';
+    if (recurEl) recurEl.value = 'none';
     await saveData();
     renderAll();
   };
@@ -458,7 +538,8 @@ function setupAdds() {
   if (addGrocery) addGrocery.onclick = async () => {
     const item = $('#grocery-item').value.trim();
     if (!item) return;
-    state.data.groceries.push({ id: uid(), item });
+    const byEl = $('#grocery-by');
+    state.data.groceries.push({ id: uid(), item, by: byEl ? byEl.value : 'michael', done: false });
     $('#grocery-item').value = '';
     await saveData();
     renderAll();
@@ -469,7 +550,14 @@ function setupAdds() {
     const description = $('#meal-desc').value.trim();
     const date = $('#meal-date').value;
     if (!description || !date) return;
-    state.data.meals.push({ id: uid(), date, type: $('#meal-type').value, description });
+    const byEl = $('#meal-by');
+    state.data.meals.push({
+      id: uid(),
+      date,
+      type: $('#meal-type').value,
+      description,
+      by: byEl ? byEl.value : 'michael'
+    });
     $('#meal-desc').value = '';
     await saveData();
     renderAll();
@@ -579,6 +667,24 @@ function setupAdds() {
       renderBills();
     };
   }
+
+  $$('.log-filters button').forEach(btn => {
+    btn.onclick = () => {
+      $$('.log-filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.logFilter = btn.dataset.filter;
+      renderBaby();
+    };
+  });
+
+  const exportBtn = $('#export-data');
+  if (exportBtn) exportBtn.onclick = () => {
+    const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'household-backup.json';
+    a.click();
+  };
 }
 
 // Init
