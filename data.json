@@ -1,5 +1,12 @@
 {
-  "chores": [],
+  "chores": [
+    {
+      "id": "mwmn7z805bhmv",
+      "text": "Return Scrubs from Amazon",
+      "assigned": "michael",
+      "done": false
+    }
+  ],
   "groceries": [
     {
       "id": "mwm4uw3dx4ha3",
