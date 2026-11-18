@@ -91,6 +91,13 @@ h2 {
   color: #f0f3f1;
 }
 
+h3 {
+  margin: 1.5rem 0 0.75rem;
+  font-weight: 500;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -345,6 +352,28 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
   margin-left: 0.35rem;
 }
 
+.countdown {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.countdown .days {
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.countdown .label {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -413,4 +442,5 @@ ul li .done { text-decoration: line-through; opacity: 0.5; }
     width: 52px;
     height: 52px;
   }
+  .countdown .days { font-size: 2.25rem; }
 }
