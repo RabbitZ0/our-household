@@ -8,6 +8,14 @@
       "name": "Rent",
       "amount": "450",
       "dueDate": "2026-12-01",
+      "paid": true,
+      "recur": "monthly"
+    },
+    {
+      "id": "mwm4ngnqmi1tv",
+      "name": "Rent",
+      "amount": "450",
+      "dueDate": "2027-01-01",
       "paid": false,
       "recur": "monthly"
     }
