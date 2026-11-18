@@ -2,7 +2,16 @@
   "chores": [],
   "groceries": [],
   "meals": [],
-  "bills": [],
+  "bills": [
+    {
+      "id": "mwm4n59wqzz19",
+      "name": "Rent",
+      "amount": "450",
+      "dueDate": "2026-12-01",
+      "paid": false,
+      "recur": "monthly"
+    }
+  ],
   "plans": [],
   "notes": []
 }
