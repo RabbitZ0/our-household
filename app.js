@@ -1,6 +1,6 @@
 // Our Household App
 const state = {
-  data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [] },
+  data: { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [], dueDate: null },
   config: null,
   currentMonthPlans: new Date(),
   currentMonthBills: new Date(),
@@ -68,9 +68,17 @@ function recurLabel(recur) {
   return map[recur] || '';
 }
 
+function daysUntil(iso) {
+  if (!iso) return null;
+  const today = new Date(todayISO() + 'T00:00:00');
+  const target = new Date(iso + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+
 function ensureArrays() {
   const keys = ['chores', 'groceries', 'meals', 'bills', 'plans', 'notes', 'babyLogs', 'milestones', 'appointments', 'babyNotes'];
   keys.forEach(k => { if (!Array.isArray(state.data[k])) state.data[k] = []; });
+  if (state.data.dueDate === undefined) state.data.dueDate = null;
 }
 
 // Config
@@ -122,7 +130,7 @@ async function loadData() {
     renderAll();
   } catch (e) {
     console.warn('No data yet or error:', e);
-    state.data = { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [] };
+    state.data = { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [], babyLogs: [], milestones: [], appointments: [], babyNotes: [], dueDate: null };
     state.sha = null;
     renderAll();
     await saveData();
@@ -284,6 +292,25 @@ function renderNotes() {
 }
 
 function renderBaby() {
+  const countdown = $('#countdown');
+  if (countdown) {
+    const due = state.data.dueDate;
+    if (due) {
+      const days = daysUntil(due);
+      if (days > 0) {
+        countdown.innerHTML = `<div class="days">${days}</div><div class="label">days until Emelie arrives<br><small>${formatDate(due)}</small></div>`;
+      } else if (days === 0) {
+        countdown.innerHTML = `<div class="days">Today</div><div class="label">Emelie’s due date is today!</div>`;
+      } else {
+        countdown.innerHTML = `<div class="days">${Math.abs(days)}</div><div class="label">days past due<br><small>${formatDate(due)}</small></div>`;
+      }
+    } else {
+      countdown.innerHTML = `<div class="label">Set Emelie’s due date below</div>`;
+    }
+  }
+  const dueInput = $('#due-date');
+  if (dueInput && state.data.dueDate) dueInput.value = state.data.dueDate;
+
   const today = todayISO();
   const logs = state.data.babyLogs || [];
   const todayLogs = logs.filter(l => (l.time || '').startsWith(today));
@@ -532,6 +559,15 @@ function setupAdds() {
     if (!text) return;
     state.data.babyNotes.push({ id: uid(), text, author: $('#baby-note-author').value, date: todayISO() });
     $('#baby-note-text').value = '';
+    await saveData();
+    renderAll();
+  };
+
+  const saveDue = $('#save-due');
+  if (saveDue) saveDue.onclick = async () => {
+    const val = $('#due-date').value;
+    if (!val) return;
+    state.data.dueDate = val;
     await saveData();
     renderAll();
   };
