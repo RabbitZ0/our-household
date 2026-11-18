@@ -10,6 +10,14 @@
       "dueDate": "2026-12-01",
       "paid": true,
       "recur": "monthly"
+    },
+    {
+      "id": "mwm4ntryc8ld7",
+      "name": "Rent",
+      "amount": "40",
+      "dueDate": "2026-12-01",
+      "paid": false,
+      "recur": "monthly"
     }
   ],
   "plans": [],
