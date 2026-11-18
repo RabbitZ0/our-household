@@ -21,6 +21,17 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+function displayName(value) {
+  const map = {
+    me: 'Michael (Me)',
+    wife: 'Amber (Wife)',
+    michael: 'Michael (Me)',
+    amber: 'Amber (Wife)',
+    both: 'Both'
+  };
+  return map[value] || value;
+}
+
 // Config
 function loadConfig() {
   const saved = localStorage.getItem('gh-config');
@@ -72,7 +83,6 @@ async function loadData() {
     state.data = { chores: [], groceries: [], meals: [], bills: [], plans: [], notes: [] };
     state.sha = null;
     renderAll();
-    // Try to create
     await saveData();
   }
 }
@@ -124,7 +134,7 @@ function renderAll() {
 function renderHome() {
   const today = todayISO();
   const chores = state.data.chores.filter(c => !c.done).slice(0, 5);
-  $('#today-chores ul').innerHTML = chores.length ? chores.map(c => `<li>${c.text} <small>(${c.assigned})</small></li>`).join('') : '<li>No pending chores</li>';
+  $('#today-chores ul').innerHTML = chores.length ? chores.map(c => `<li>${c.text} <small>(${displayName(c.assigned)})</small></li>`).join('') : '<li>No pending chores</li>';
 
   const soonBills = state.data.bills.filter(b => !b.paid && b.dueDate >= today).slice(0, 4);
   $('#today-bills ul').innerHTML = soonBills.length ? soonBills.map(b => `<li>${b.name} — $${b.amount} <small>${formatDate(b.dueDate)}</small></li>`).join('') : '<li>No upcoming bills</li>';
@@ -133,7 +143,7 @@ function renderHome() {
   $('#today-meals ul').innerHTML = todayMeals.length ? todayMeals.map(m => `<li>${m.type}: ${m.description}</li>`).join('') : '<li>No meals planned</li>';
 
   const recentNotes = state.data.notes.slice(-3).reverse();
-  $('#today-notes ul').innerHTML = recentNotes.length ? recentNotes.map(n => `<li>${n.text} <small>— ${n.author}</small></li>`).join('') : '<li>No notes</li>';
+  $('#today-notes ul').innerHTML = recentNotes.length ? recentNotes.map(n => `<li>${n.text} <small>— ${displayName(n.author)}</small></li>`).join('') : '<li>No notes</li>';
 }
 
 function renderList(ul, items, renderer, empty = 'Nothing here yet') {
@@ -143,7 +153,7 @@ function renderList(ul, items, renderer, empty = 'Nothing here yet') {
 function renderChores() {
   renderList($('#chores-list'), state.data.chores, c => `
     <li class="${c.done ? 'done' : ''}">
-      <span>${c.text} <small>(${c.assigned})</small></span>
+      <span>${c.text} <small>(${displayName(c.assigned)})</small></span>
       <span>
         <button class="toggle-btn" data-id="${c.id}">${c.done ? '↺' : '✓'}</button>
         <button class="delete-btn" data-id="${c.id}">×</button>
@@ -199,7 +209,7 @@ function renderPlans() {
 function renderNotes() {
   renderList($('#notes-list'), [...state.data.notes].reverse(), n => `
     <li>
-      <span>${n.text} <small>— ${n.author} · ${formatDate(n.date)}</small></span>
+      <span>${n.text} <small>— ${displayName(n.author)} · ${formatDate(n.date)}</small></span>
       <button class="delete-btn" data-id="${n.id}">×</button>
     </li>
   `, 'No notes');
@@ -334,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupAdds();
   $('#save-config').onclick = saveConfig;
   loadConfig();
-  // Set default dates
   const t = todayISO();
   $('#plan-date').value = t;
   $('#meal-date').value = t;
