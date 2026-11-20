@@ -10,7 +10,8 @@
   "groceries": [
     {
       "id": "mwm4uw3dx4ha3",
-      "item": "Milk, Sub Bread and Queso"
+      "item": "Milk, Sub Bread and Queso",
+      "done": true
     }
   ],
   "meals": [],
