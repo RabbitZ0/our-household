@@ -7,7 +7,14 @@
       "done": false
     }
   ],
-  "groceries": [],
+  "groceries": [
+    {
+      "id": "mwqq2kynk6exi",
+      "item": "Bread",
+      "by": "michael",
+      "done": false
+    }
+  ],
   "meals": [],
   "bills": [
     {
