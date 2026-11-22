@@ -37,6 +37,12 @@
       "item": "Ice cream",
       "by": "michael",
       "done": false
+    },
+    {
+      "id": "mwsb02qgyyxbb",
+      "item": "Laundry detergent",
+      "by": "michael",
+      "done": false
     }
   ],
   "meals": [],
