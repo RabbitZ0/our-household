@@ -9,12 +9,6 @@
   ],
   "groceries": [
     {
-      "id": "mwqq2kynk6exi",
-      "item": "Bread",
-      "by": "michael",
-      "done": false
-    },
-    {
       "id": "mwqq2pibkim0f",
       "item": "Chips",
       "by": "michael",
