@@ -9,18 +9,6 @@
   ],
   "groceries": [
     {
-      "id": "mwqq2pibkim0f",
-      "item": "Chips",
-      "by": "michael",
-      "done": true
-    },
-    {
-      "id": "mwqq2vxj4i4a8",
-      "item": "Pizza rolls",
-      "by": "michael",
-      "done": true
-    },
-    {
       "id": "mwsb02qgyyxbb",
       "item": "Laundry detergent",
       "by": "michael",
