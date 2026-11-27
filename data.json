@@ -29,6 +29,12 @@
       "text": "Dishes",
       "assigned": "michael",
       "done": false
+    },
+    {
+      "id": "mwzlrymfvqtvx",
+      "text": "Clean mini split",
+      "assigned": "michael",
+      "done": false
     }
   ],
   "groceries": [
