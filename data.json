@@ -23,6 +23,12 @@
       "text": "Wash blankets and dogs sweaters",
       "assigned": "michael",
       "done": false
+    },
+    {
+      "id": "mwzi7pgri47nw",
+      "text": "Give dogs baths",
+      "assigned": "amber",
+      "done": false
     }
   ],
   "groceries": [
