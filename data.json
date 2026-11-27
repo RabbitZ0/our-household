@@ -29,6 +29,12 @@
       "text": "Give dogs baths",
       "assigned": "amber",
       "done": false
+    },
+    {
+      "id": "mwzi86m6aplpq",
+      "text": "Dishes",
+      "assigned": "michael",
+      "done": false
     }
   ],
   "groceries": [
