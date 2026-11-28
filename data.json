@@ -39,12 +39,6 @@
   ],
   "groceries": [
     {
-      "id": "mwsb02qgyyxbb",
-      "item": "Laundry detergent",
-      "by": "michael",
-      "done": false
-    },
-    {
       "id": "mwu38bommila3",
       "item": "Toilet paper",
       "by": "michael",
